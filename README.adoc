@@ -1,0 +1,15 @@
+= junit-microservice-rule
+
+A JUnit rule to ensure that an Microservice endpoint is available before proceeding.
+
+Optionally manages the Microservice process.
+
+Usefull for tests that require one or more running Microservices
+
+== Usage
+
+@ClassRule
+static MicroserviceRule ms1 = new MicroserviceRule("http://localhost:8181/endpoint3").withExecutableJar("ms1.jar")
+
+@ClassRule
+static MicroserviceRule ms2 = new MicroserviceRule("http://localhost:8282/endpoint2").withExecutableJar("ms2.jar")
