@@ -11,6 +11,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class MicroserviceRule extends ExternalResource {
@@ -132,4 +133,8 @@ public class MicroserviceRule extends ExternalResource {
     }
 
 
+    public MicroserviceRule withTimeout(int i, TimeUnit seconds) {
+        //TODO
+        return this;
+    }
 }
