@@ -10,8 +10,10 @@ Usefull for tests that require one or more running Microservices
 [source,java]
 ----
 @ClassRule
-static MicroserviceRule ms1 = new MicroserviceRule("http://localhost:8181/endpoint3").withExecutableJar("ms1.jar")
+static MicroserviceRule ms1 = new MicroserviceRule("http://localhost:8181/endpoint3")
+  .withExecutableJar("ms1.jar")
 
 @ClassRule
-static MicroserviceRule ms2 = new MicroserviceRule("http://localhost:8282/endpoint2").withExecutableJar("ms2.jar")
+static MicroserviceRule ms2 = new MicroserviceRule("http://localhost:8282/endpoint2")
+  .withExecutableJar("ms2.jar")
 ----
