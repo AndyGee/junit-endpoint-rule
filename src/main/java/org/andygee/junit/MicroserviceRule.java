@@ -1,49 +1,62 @@
 package org.andygee.junit;
 
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import org.junit.Assert;
 import org.junit.rules.ExternalResource;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class MicroserviceRule extends ExternalResource {
 
     private final ReentrantLock lock = new ReentrantLock();
-    private final URL url;
+    private final CountDownLatch latch = new CountDownLatch(1);
+    private final AtomicBoolean poll = new AtomicBoolean(true);
+    private final AtomicReference<URL> url = new AtomicReference<>();
     private File file;
     private String[] args;
-    private ResolutionStrategy strategy = new
-            DefaultJavaResolutionStrategy();
+    private ResolutionStrategy strategy = new DefaultJavaResolutionStrategy();
+    private long time = 30;
+    private TimeUnit unit = TimeUnit.SECONDS;
 
     public MicroserviceRule(URL url) {
-        this.url = url;
+        this.url.set(url);
     }
 
     public MicroserviceRule(String url) {
         try {
-            this.url = new URL(url);
+            this.url.set(new URL(url));
         } catch (MalformedURLException e) {
             throw new RuntimeException("Invalid URL: " + url, e);
         }
     }
 
-    MicroserviceRule withExecutableJar(File file, String... args) {
+    public MicroserviceRule withExecutableJar(File file, String... args) {
+
+        Assert.assertTrue("The file must exist and be readable: " + file, file.exists() && file.canRead());
+
         this.file = file;
         this.args = args;
         return this;
     }
 
-    MicroserviceRule withJavaResolutionStrategy(ResolutionStrategy
-                                                        strategy) {
+    public MicroserviceRule withJavaResolutionStrategy(ResolutionStrategy strategy) {
         this.strategy = (null != strategy ? strategy : this.strategy);
+        return this;
+    }
+
+    public MicroserviceRule withTimeout(int time, TimeUnit unit) {
+        this.time = time;
+        this.unit = unit;
         return this;
     }
 
@@ -52,9 +65,8 @@ public class MicroserviceRule extends ExternalResource {
     @Override
     protected void before() throws Throwable {
 
-        if (null == this.file) {
-            return;
-        }
+        Assert.assertNotNull("The MicroserviceRule requires a valid jar file", this.file);
+        Assert.assertNotNull("The MicroserviceRule requires a valid url", this.url.get());
 
         this.lock.lock();
 
@@ -68,13 +80,28 @@ public class MicroserviceRule extends ExternalResource {
                 args.addAll(Arrays.asList(this.args));
             }
 
-
-            ProcessBuilder pb = new ProcessBuilder(args.toArray(new
-                    String[args.size()]));
+            ProcessBuilder pb = new ProcessBuilder(args.toArray(new String[args.size()]));
             pb.directory(file.getParentFile());
             pb.inheritIO();
             process = pb.start();
+
+            final Thread t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    if (MicroserviceRule.this.connect(MicroserviceRule.this.url.get())) {
+                        MicroserviceRule.this.latch.countDown();
+                    }
+                }
+            }, "Connect thread :: " + this.url.get());
+
+            t.start();
+
+            if (!latch.await(this.time, this.unit)) {
+                throw new RuntimeException("Failed to connect to server within timeout: " + this.url.get());
+            }
+
         } finally {
+            this.poll.set(false);
             this.lock.unlock();
         }
     }
@@ -94,47 +121,32 @@ public class MicroserviceRule extends ExternalResource {
         }
     }
 
-    private boolean connect(final String url) {
-        Client client = null;
-        int err = 0;
+    private boolean connect(final URL url) {
 
         do {
             try {
-                client = ClientBuilder.newClient();
-                Response.Status.Family family = client.target(url)
-                        .request(MediaType.APPLICATION_JSON_TYPE)
-                        .get().getStatusInfo().getFamily();
+                Request request = new Request.Builder().url(url).build();
 
-                if (Response.Status.Family.SUCCESSFUL.equals
-                        (family)) {
+                if (new OkHttpClient().newCall(request).execute().isSuccessful()) {
                     return true;
                 } else {
                     throw new Exception("Unexpected family");
                 }
             } catch (Exception ignore) {
-                err++;
-                System.out.println("Waited to connect: " + ignore
-                        .getMessage());
-                if (err < 10) {
+
+                System.out.println("Waited to connect: " + ignore.getMessage());
+                if (poll.get()) {
                     try {
                         Thread.sleep(2000);
                     } catch (InterruptedException e) {
                         return false;
                     }
                 }
-            } finally {
-                if (client != null) {
-                    client.close();
-                }
             }
-        } while (err < 10);
+        } while (poll.get());
 
         return false;
     }
 
 
-    public MicroserviceRule withTimeout(int i, TimeUnit seconds) {
-        //TODO
-        return this;
-    }
 }
