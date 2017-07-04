@@ -23,6 +23,7 @@ import org.junit.rules.ExternalResource;
 
 import java.io.File;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,12 +53,16 @@ public class MicroserviceRule extends ExternalResource {
     private int interval = 2000;
 
     /**
-     * URL constructor
+     * URI constructor
      *
-     * @param url URL to test against
+     * @param uri URI to test against
      */
-    public MicroserviceRule(URL url) {
-        this.url.set(url);
+    public MicroserviceRule(URI uri) {
+        try {
+            this.url.set(uri.toURL());
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("Invalid URL: " + url, e);
+        }
     }
 
     /**
