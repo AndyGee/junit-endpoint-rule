@@ -9,17 +9,50 @@
     <artifactId>junit-microservice-rule</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
+    <description>A JUnit rule to ensure that an Microservice endpoint is available before proceeding.</description>
+
+    <issueManagement>
+        <url>https://github.com/AndyGee/junit-microservice-rule/issues</url>
+        <system>GitHub Issues</system>
+    </issueManagement>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <email>andy@gmx.com</email>
+            <name>Andy Gumbrecht</name>
+            <url>https://github.com/AndyGee</url>
+            <id>AndyGee</id>
+        </developer>
+    </developers>
+
+    <scm>
+        <url>https://github.com/AndyGee/junit-microservice-rule</url>
+        <connection>scm:git:git://github.com/AndyGee/junit-microservice-rule.git</connection>
+        <developerConnection>scm:git:git@github.com:AndyGee/junit-microservice-rule.git</developerConnection>
+    </scm>
 
     <prerequisites>
         <maven>3.3.9</maven>
     </prerequisites>
 
     <properties>
-
+        <project.build.sourceEncoding>UTF-8
+        </project.build.sourceEncoding>
+        <project.build.reportEncoding>UTF-8
+        </project.build.reportEncoding>
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.target>1.7</maven.compiler.target>
 
         <version.junit>4.12</version.junit>
+        <version.okhttp>3.8.1</version.okhttp>
     </properties>
 
     <dependencyManagement>
@@ -32,7 +65,12 @@
             <dependency>
                 <groupId>com.squareup.okhttp3</groupId>
                 <artifactId>okhttp</artifactId>
-                <version>3.8.1</version>
+                <version>${version.okhttp}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.tomakehurst</groupId>
+                <artifactId>wiremock</artifactId>
+                <version>2.2.1</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
