@@ -9,11 +9,39 @@ Usefull for tests that require one or more running Microservices
 == Usage
 [source,java]
 ----
-@ClassRule
-static MicroserviceRule ms1 = new MicroserviceRule("http://localhost:8181/endpoint1")
-  .withExecutableJar("ms1.jar")
+public MyTestClass {
+...
 
 @ClassRule
-static MicroserviceRule ms2 = new MicroserviceRule("http://localhost:8282/endpoint2")
+public static MicroserviceRule ms1 = new MicroserviceRule
+("http://localhost:8181/endpoint1")
+  .withExecutableJar("ms1.jar"); // <1>
+
+@ClassRule
+public static MicroserviceRule ms2 = new MicroserviceRule
+("http://localhost:8282/endpoint2")
   .withExecutableJar("ms2.jar")
+  .withJavaResolutionStrategy(new MyJavaBinaryResolutionStrategy())
+  .withTimeout(60, TimeUnit.SECONDS)
+  .withPollingInterval(500); // <2>
+
+@ClassRule
+public static RuleChain chain = RuleChain
+            .outerRule(new MicroserviceRule(...))
+            .around(new MicroserviceRule(...)); // <3>
+
+
+...
+
+@Test
+public void myTest(){ // <4>
+    //Test something that depends on a Microservice
+}
+
+...
 ----
+
+<1> Simple usage
+<2> Using more options
+<3> Using the JUnit RuleChain to start in order
+<4> By the time the test is run all the Microservices are running
